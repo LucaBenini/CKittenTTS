@@ -1,0 +1,67 @@
+# Makefile for nmake to build bin\kittentts.exe
+# Run with: nmake /f Makefile
+
+# Tools
+CC = cl
+LD = link
+
+# Folders
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
+
+# Output
+TARGET = kittentts.exe
+
+# Sources (under SRC_DIR)
+SRCS = \
+  $(SRC_DIR)\main.c \
+  $(SRC_DIR)\onnx.c \
+  $(SRC_DIR)\phonemes.c \
+  $(SRC_DIR)\wav.c
+
+# Objects (under OBJ_DIR)
+OBJS = \
+  $(OBJ_DIR)\main.obj \
+  $(OBJ_DIR)\onnx.obj \
+  $(OBJ_DIR)\phonemes.obj \
+  $(OBJ_DIR)\wav.obj
+
+# Include & lib paths (adjust as needed)
+INCLUDES = /I$(SRC_DIR)
+LIBPATHS = /LIBPATH:.
+
+# Libraries (add any you need, e.g. onnxruntime.lib)
+LIBS =
+
+# Flags
+CFLAGS = /nologo /W3 /EHsc $(INCLUDES)
+LDFLAGS = /nologo $(LIBPATHS)
+
+# Ensure NMAKE knows our suffixes
+.SUFFIXES: .c .obj
+
+# Default target
+all: $(BIN_DIR)\$(TARGET)
+
+# Link step (ensure bin exists)
+$(BIN_DIR)\$(TARGET): $(OBJS)
+	@if not exist "$(BIN_DIR)" mkdir "$(BIN_DIR)"
+	$(LD) $(LDFLAGS) /OUT:$@ $(OBJS) $(LIBS)
+
+# Inference rule: build obj\*.obj from src\*.c
+# (this is the key fix so NMAKE finds sources in src\)
+{$(SRC_DIR)}.c{$(OBJ_DIR)}.obj:
+	@if not exist "$(OBJ_DIR)" mkdir "$(OBJ_DIR)"
+	$(CC) $(CFLAGS) /Fo$@ /c $<
+
+# Optional explicit deps (handy if you add headers later)
+$(OBJ_DIR)\main.obj:     $(SRC_DIR)\main.c
+$(OBJ_DIR)\onnx.obj:     $(SRC_DIR)\onnx.c
+$(OBJ_DIR)\phonemes.obj: $(SRC_DIR)\phonemes.c
+$(OBJ_DIR)\wav.obj:      $(SRC_DIR)\wav.c
+
+# Clean
+clean:
+	@if exist "$(OBJ_DIR)\*.obj" del /Q "$(OBJ_DIR)\*.obj"
+	@if exist "$(BIN_DIR)\$(TARGET)" del /Q "$(BIN_DIR)\$(TARGET)"
