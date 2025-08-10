@@ -59,15 +59,22 @@ void os_print_last_error(const char* msg) {
 #else
 void* os_load_library(const char* dllname)
 {
-  return 0;
+   return dlopen(dllname, RTLD_LAZY);
 }
 void* os_get_function(void* dll, const char* funcname)
 {
-  return 0;
+  if (!dll)
+    return NULL;
+  return dlsym(dll, funcname);
 }
 
 void os_print_last_error(const char* msg)
 {
+   const char* err = dlerror();
+   if (err)
+     fprintf(stderr, "%s: %s\n", msg, err);
+   else
+     fprintf(stderr, "%s\n", msg);
 }
 
 #endif

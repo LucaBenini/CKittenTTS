@@ -27,10 +27,10 @@ INCLUDES := -I$(SRC_DIR)
 LIBPATHS := -L.
 
 # Libraries (adjust if needed, e.g. -lonnxruntime)
-LIBS :=
+LIBS := -ldl
 
 # Flags
-CFLAGS := -Wall -Wextra -ggdb $(INCLUDES) -Wno-unused-result -Wno-unused-parameter
+CFLAGS := -Wall -Wextra -ggdb $(INCLUDES) -Wno-unused-result -Wno-unused-parameter 
 LDFLAGS := $(LIBPATHS) $(LIBS)
 
 # Default target

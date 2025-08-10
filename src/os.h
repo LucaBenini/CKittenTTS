@@ -11,8 +11,10 @@
 #endif
 
 #else
-#define ESPEAK_DLL "libespeak-ng"
-        #define ONNX_DLL "libonnx.so"
+#include <dlfcn.h>
+#include <stdio.h>
+#define ESPEAK_DLL "libespeak-ng.so"
+        #define ONNX_DLL "libonnxruntime.so"
 #endif
 #include <stdlib.h>
 #include <string.h>
