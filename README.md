@@ -1,63 +1,99 @@
+Here’s the updated README with your changes applied.
+
+---
+
 # CKitten
 
 **CKitten** is a minimal **C port** of [KittenTTS](https://github.com/KittenML/KittenTTS/), a text-to-speech system.
-This port currently works **only on Windows**, with **hardcoded voice and message**.
 
-It requires **espeak-ng** to be installed and uses it to synthesize speech.
-THIS README has been fully ai written. Don't trust it blindly.
+It now runs on **Windows** and **Linux** (both **x64** and **ARM64**, e.g., Raspberry Pi 64-bit OS).
 
 ---
 
 ## 📦 Requirements
 
-1. **Windows** (tested only on Windows so far)
+### Windows
+
+1. **Windows** (tested on recent versions)
 2. **espeak-ng 1.52.0**
 
-   * Download and install the `.msi` from:
+   * Download and install the `.msi` from the official release page:
      [espeak-ng 1.52.0 release page](https://github.com/espeak-ng/espeak-ng/releases/tag/1.52.0)
 
-⚠ **Important:** CKitten currently assumes that `espeak-ng` is installed and available in your system path.
+> ⚠️ CKitten assumes `espeak-ng` is installed and available in your system PATH.
+
+---
+
+### Linux (x64 & ARM64, including Raspberry Pi 64-bit)
+
+You’ll need the `espeak-ng` development package, plus a **recent** `onnxruntime`. Many distro packages ship an older `onnxruntime`, so fetch the shared libraries from the Python package and install them system-wide:
+
+```bash
+sudo apt install -y libespeak-ng-dev
+
+mkdir /tmp/pv
+cd /tmp/pv/
+python -mvenv venv
+source venv/bin/activate
+pip install onnxruntime
+sudo cp ./venv/lib/python3.11/site-packages/onnxruntime/capi/libonnxruntime_providers_shared.so /usr/lib
+sudo cp ./venv/lib/python3.11/site-packages/onnxruntime/capi/libonnxruntime.so.1.22.1 /usr/lib/libonnxruntime.so
+sudo ldconfig
+```
+
+> 💡 If your system Python version differs from `3.11`, adjust the paths accordingly in the `cp` commands.
 
 ---
 
 ## 🔨 Build
 
-To compile:
+**Windows (Developer Command Prompt):**
 
 ```powershell
 nmake -f makefile
 ```
 
-This will produce an executable (`ckitten.exe`).
+**Linux (GNU Make):**
+
+```bash
+make
+```
+
+This will produce the executable in `bin/`:
+
+* `bin/kittentts.exe` on Windows
+* `bin/kittentts` on Linux
 
 ---
 
-## ▶ Run
+## ▶️ Usage
 
-At the moment:
+```
+./kittentts <model_path> <voice_path> <output> <message> <speed>
 
-* **Voice** is hardcoded (change it in the source to point to an approprate ben if you want another voice).
-* **Message** is also hardcoded (edit in the code to change the text to speak).
-
-Run:
-
-```powershell
-cd bin
-kittentts.exe
+  model_path : Path to the model file
+  voice_path : Path to the voice file
+  output     : Wav file to create
+  message    : Text to synthesize
+  speed      : Speech speed (float)
 ```
 
-it will generate/overwrite audio1.wav speaking the hardcoded text.
+**Example:**
+
+```bash
+./kittentts kitten_tts_nano_v0_1.onnx expr-voice-2-m.bin sample.wav \
+"Kitten TTS is an open-source series of tiny and expressive Text-to-Speech models" 1.0
+```
 
 ---
 
 ## 🗒 Notes
 
-* The project is in **early stage** — no runtime voice or text selection yet.
-* Future plans include:
+* Supports **Windows** and **Linux** (x64 & ARM64).
+* Runtime selection of **model**, **voice**, **output file**, **text**, and **speed** is supported via CLI arguments.
 
-  * No Plan this is a to migrate to C, next pla
 ---
 
 ## 📜 License
 
-CKitten is a port of KittenTTS source code and follows the same license as the original project. See [KittenTTS LICENSE](https://github.com/KittenML/KittenTTS/blob/main/LICENSE). Or is probably GPLv3. 
+CKitten is a port of KittenTTS source code and follows the same license as the original project. See the [KittenTTS LICENSE](https://github.com/KittenML/KittenTTS/blob/main/LICENSE).
