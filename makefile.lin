@@ -1,0 +1,60 @@
+# Makefile for GNU Make to build bin/kittentts
+
+# Tools
+CC := gcc
+
+# Folders
+SRC_DIR := src
+OBJ_DIR := obj
+BIN_DIR := bin
+
+# Output
+TARGET := kittentts
+
+# Sources (under SRC_DIR)
+SRCS := \
+  $(SRC_DIR)/main.c \
+  $(SRC_DIR)/onnx.c \
+  $(SRC_DIR)/phonemes.c \
+  $(SRC_DIR)/wav.c \
+  $(SRC_DIR)/os.c
+
+# Objects (under OBJ_DIR)
+OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
+# Include & lib paths
+INCLUDES := -I$(SRC_DIR)
+LIBPATHS := -L.
+
+# Libraries (adjust if needed, e.g. -lonnxruntime)
+LIBS :=
+
+# Flags
+CFLAGS := -Wall -Wextra -O2 $(INCLUDES) -Wno-unused-result -Wno-unused-parameter
+LDFLAGS := $(LIBPATHS) $(LIBS)
+
+# Default target
+all: $(BIN_DIR)/$(TARGET)
+
+# Link step
+$(BIN_DIR)/$(TARGET): $(OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+
+# Compile step
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Explicit dependencies (optional, handy if you add headers)
+$(OBJ_DIR)/main.o:     $(SRC_DIR)/main.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
+$(OBJ_DIR)/onnx.o:     $(SRC_DIR)/onnx.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
+$(OBJ_DIR)/phonemes.o: $(SRC_DIR)/phonemes.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
+$(OBJ_DIR)/wav.o:      $(SRC_DIR)/wav.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
+$(OBJ_DIR)/os.o:       $(SRC_DIR)/os.c $(SRC_DIR)/os.h
+
+# Clean
+clean:
+	rm -f $(OBJ_DIR)/*.o $(BIN_DIR)/$(TARGET)
+
+.PHONY: all clean

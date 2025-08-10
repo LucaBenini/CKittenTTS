@@ -1,6 +1,6 @@
 ﻿#include "kittentts.h"
 #include "onnxruntime_c_api.h"
-typedef OrtApiBase* (_stdcall* OrtGetApiBase_t)(void);
+typedef OrtApiBase* (ORT_API_CALL *OrtGetApiBase_t)(void);
 typedef struct onnx_manager
 {
 		const OrtApi* api;
@@ -14,7 +14,6 @@ typedef struct onnx_manager
 } onnx_manager;
 static int load_float32_array(const char* path, float** out_data, size_t* out_count);
 
-static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tensors, const char* filename);
 static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path);
 int write_wav_float32_mono(const char* path, const float* samples,
     uint32_t nframes, uint32_t sample_rate /* e.g., 24000 */);
@@ -30,7 +29,7 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
 {
     if (!om)
         return -1;
-    HMODULE h = os_load_library("onnxruntime.dll");
+    void* h = os_load_library("onnxruntime.dll");
     if (!h)
     {
         os_print_last_error("Unable to load onnxruntime.dll");
@@ -67,9 +66,13 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
         os_print_last_error("Unable to api->CreateSessionOptions");
         return -1;
     }
-	ORTCHAR_T* model_path_str = os_char_to_wchar(model_path);
+#ifdef _WIN32
+    ORTCHAR_T* model_path_str = os_char_to_wchar(model_path);
+#else
+    ORTCHAR_T* model_path_str = strdup(model_path);
+#endif    
     om->api->CreateSession(om->env, model_path_str, om->session_options, &om->session);
-	free(model_path_str);
+    free(model_path_str);
     if (!om->session)
     {
         os_print_last_error("Unable to api->CreateSession (==>the model is used here for the first time)");
@@ -203,21 +206,15 @@ static int load_float32_array(const char* path, float** out_data, size_t* out_co
     *out_count = 0;
 
     FILE* f = NULL;
-#ifdef _WIN32
     f=fopen(path, "rb");
-	if(!f)
-		return 2;
-#else
-    // If you ever need POSIX: convert 'path' to UTF-8 and use fopen().
-    // For now we assume Windows usage because of char path.
-    f = NULL; return 2;
-#endif
+    if(!f)
+      return 2;
 
     // Get file size (supports large files)
-    if (_fseeki64(f, 0, SEEK_END) != 0) { fclose(f); return 3; }
-    long long fsize = _ftelli64(f);
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return 3; }
+    int fsize = ftell(f);
     if (fsize < 0) { fclose(f); return 3; }
-    if (_fseeki64(f, 0, SEEK_SET) != 0) { fclose(f); return 3; }
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return 3; }
 
     // Must be a multiple of 4 bytes (float32)
     if ((fsize % 4) != 0) { fclose(f); return 4; }
@@ -246,62 +243,6 @@ static int load_float32_array(const char* path, float** out_data, size_t* out_co
     *out_count = count;
     return 0;
 }
-// Save first output to binary file
-static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tensors, const char* filename) {
-    if (!output_tensors || !output_tensors[0]) {
-        fprintf(stderr, "No outputs to save.\n");
-        return;
-    }
-
-    int is_tensor;
-    ort->IsTensor(output_tensors[0], &is_tensor);
-    if (!is_tensor) {
-        fprintf(stderr, "First output is not a tensor.\n");
-        return;
-    }
-
-    OrtTensorTypeAndShapeInfo* info;
-    ort->GetTensorTypeAndShape(output_tensors[0], &info);
-
-    // Get total number of elements
-    size_t total_len;
-    ort->GetTensorShapeElementCount(info, &total_len);
-
-    // Get element type
-    ONNXTensorElementDataType type;
-    ort->GetTensorElementType(info, &type);
-
-    // Get raw data pointer
-    void* data_ptr;
-    ort->GetTensorMutableData(output_tensors[0], &data_ptr);
-
-    // Compute element size
-    size_t elem_size = 0;
-    switch (type) {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:   elem_size = sizeof(float);   break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:   elem_size = sizeof(int64_t); break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   elem_size = sizeof(int32_t); break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   elem_size = sizeof(uint8_t); break;
-    default:
-        fprintf(stderr, "Unsupported element type: %d\n", type);
-        ort->ReleaseTensorTypeAndShapeInfo(info);
-        return;
-    }
-
-    // Write binary file
-    FILE* f = fopen(filename, "wb");
-    if (!f) {
-        
-        ort->ReleaseTensorTypeAndShapeInfo(info);
-        return;
-    }
-    fwrite(data_ptr, elem_size, total_len, f);
-    fclose(f);
-
-    ort->ReleaseTensorTypeAndShapeInfo(info);
-
-   
-}
 static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path) {
     int is_tensor = 0;
     om->api->IsTensor(tensor, &is_tensor);
@@ -319,14 +260,6 @@ static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* p
     void* data_ptr = NULL;
     om->api->GetTensorMutableData(tensor, &data_ptr);
 
-    size_t elem_size = 0;
-    switch (et) {
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT:   elem_size = sizeof(float);   break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:   elem_size = sizeof(int64_t); break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   elem_size = sizeof(int32_t); break;
-    case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   elem_size = sizeof(uint8_t); break;
-    default: fprintf(stderr, "Unsupported element type: %d\n", et);
-    }
     write_wav_float32_mono(path, data_ptr,(uint32_t) n_elem, 24000);
     
     om->api->ReleaseTensorTypeAndShapeInfo(info);

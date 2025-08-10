@@ -34,7 +34,7 @@ char *os_wchar_to_char(const wchar_t *input) {
     wcstombs(output, input, len + 1);
     return output;
 }
-
+#ifdef _WIN32
 void* os_load_library(const char* dllname)
 {
     return LoadLibraryA(dllname);
@@ -56,3 +56,18 @@ void os_print_last_error(const char* msg) {
     fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
     if (buf) LocalFree(buf);
 }
+#else
+void* os_load_library(const char* dllname)
+{
+  return 0;
+}
+void* os_get_function(void* dll, const char* funcname)
+{
+  return 0;
+}
+
+void os_print_last_error(const char* msg)
+{
+}
+
+#endif

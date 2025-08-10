@@ -5,7 +5,6 @@ int main(void)
 {
 
     const char* text = "Kitten TTS is an open-source series of tiny and expressive Text-to-Speech models for on-device applications. Our smallest model is less than 25 megabytes.";
-    const int print_debug = 1;
 
     phonemes_manager* pm;
     pm_create(&pm);
@@ -20,7 +19,6 @@ int main(void)
     onnx_init(om,MODEL_PATH, VOICE_PATH);
     onnx_run(om, input_ids, input_ids_len,"audio1.wav");
     onnx_destroy(om);
-    /*const OrtApi* g_ort_api;
-    g_ort_api = OrtGetApiBase()->GetApi(ORT_API_VERSION);*/
+
     return 0;
 }

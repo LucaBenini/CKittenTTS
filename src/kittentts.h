@@ -1,14 +1,7 @@
 #pragma once
 
-#define _CRT_SECURE_NO_WARNINGS
-#ifdef UNICODE
-	#undef UNICODE
-#endif
 #include "os.h"
-#include <windows.h>
-#include <io.h>
 #include <fcntl.h>
-#include <windows.h>
 #include <stdio.h>
 #include <wchar.h>
 #include <wctype.h>

@@ -3,6 +3,14 @@
 	#define _CRT_SECURE_NO_WARNINGS
 	#define ESPEAK_DLL "libespeak-ng.dll"
 #include <windows.h>
+#include <io.h>
+#define _CRT_SECURE_NO_WARNINGS
+#ifdef UNICODE
+	#undef UNICODE
+#endif
+
+#else
+#define ESPEAK_DLL "libespeak-ng"
 #endif
 #include <stdlib.h>
 #include <string.h>

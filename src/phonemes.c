@@ -64,7 +64,7 @@ int pm_init(phonemes_manager* pm)
 {
     if (!pm)
         return -1;
-    HMODULE h = os_load_library(ESPEAK_DLL);
+    void* h = os_load_library(ESPEAK_DLL);
     if (!h)
     {
         os_print_last_error("Unable to load espeak library");
@@ -124,7 +124,7 @@ int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* 
     size_t out_len = 0;         // used chars (excluding NUL)
     size_t out_cap = 0;         // capacity in chars
     while (p && *(const wchar_t*)p != L'\0') {
-        const char* phon = pm->espeak_TextToPhonemes(&p, textmode, phonememode);
+      const char* phon = pm->espeak_TextToPhonemes((const void**)&p, textmode, phonememode);
         if (!phon) break;
         if (phon[0] == '\0') continue;
 
