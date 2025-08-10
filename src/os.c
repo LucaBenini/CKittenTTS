@@ -1,5 +1,5 @@
 #include "os.h"
-
+#include <stdio.h>
 
 /**
  * Convert UTF-8 char* to wchar_t*
@@ -44,4 +44,15 @@ void* os_get_function(void* dll, const char* funcname)
     if (!dll)
         return 0;
     return GetProcAddress((HMODULE)dll, funcname);
+}
+
+void os_print_last_error(const char* msg) {
+    DWORD err = GetLastError();
+    if (!err) { fprintf(stderr, "%s\n", msg); return; }
+    LPSTR buf = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&buf, 0, NULL);
+    fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
+    if (buf) LocalFree(buf);
 }

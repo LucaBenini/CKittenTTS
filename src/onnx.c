@@ -13,7 +13,7 @@ typedef struct onnx_manager
         size_t voice_size;
 } onnx_manager;
 static int load_float32_array(const char* path, float** out_data, size_t* out_count);
-static void print_last_error(const char* msg);
+
 static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tensors, const char* filename);
 static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path);
 int write_wav_float32_mono(const char* path, const float* samples,
@@ -33,38 +33,38 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
     HMODULE h = os_load_library("onnxruntime.dll");
     if (!h)
     {
-        print_last_error("Unable to load onnxruntime.dll");
+        os_print_last_error("Unable to load onnxruntime.dll");
         return -1;
     }
     
     OrtGetApiBase_t OrtGetApiBase_ptr = (OrtGetApiBase_t)os_get_function(h, "OrtGetApiBase");
     if (!OrtGetApiBase_ptr)
     {
-        print_last_error("Unable to load OrtGetApiBase");
+        os_print_last_error("Unable to load OrtGetApiBase");
         return -1;
     }
     OrtApiBase* base =OrtGetApiBase_ptr();
     if (!base)
     {
-        print_last_error("Unable to load OrtApiBase");
+        os_print_last_error("Unable to load OrtApiBase");
         return -1;
     }
     om->api = base->GetApi(ORT_API_VERSION);
     if (!om->api)
     {
-        print_last_error("Unable to load Ort API");
+        os_print_last_error("Unable to load Ort API");
         return -1;
     }
     om->api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "kittentts", &om->env);
     if (!om->env)
     {
-        print_last_error("Unable to api->CreateEnv");
+        os_print_last_error("Unable to api->CreateEnv");
         return -1;
     }
     om->api->CreateSessionOptions(&om->session_options);
     if (!om->env)
     {
-        print_last_error("Unable to api->CreateSessionOptions");
+        os_print_last_error("Unable to api->CreateSessionOptions");
         return -1;
     }
 	ORTCHAR_T* model_path_str = os_char_to_wchar(model_path);
@@ -72,19 +72,19 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
 	free(model_path_str);
     if (!om->session)
     {
-        print_last_error("Unable to api->CreateSession (==>the model is used here for the first time)");
+        os_print_last_error("Unable to api->CreateSession (==>the model is used here for the first time)");
         return -1;
     }
     load_float32_array(voice_path, &om->voice, &om->voice_size);
     if (!om->voice)
     {
-        print_last_error("Unable to load voice");
+        os_print_last_error("Unable to load voice");
         return -1;
     }
     om->api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &om->memory_info);
     if (!om->memory_info)
     {
-        print_last_error("Unable to CreateCpuMemoryInfo");
+        os_print_last_error("Unable to CreateCpuMemoryInfo");
         return -1;
     }
     return 0;
@@ -100,6 +100,8 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
     int64_t input_ids_shape[] = {1, (int64_t)input_ids_len };
 
     int64_t* input_ids_data = calloc(sizeof(int64_t), input_ids_len);
+    if (!input_ids_data)
+        return -1;
     for (size_t i = 1; i < input_ids_len-1; i++) {
         input_ids_data[i] = (int64_t)input_ids[i-1];
     }
@@ -111,11 +113,13 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
         input_ids_shape, 2, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64,
         &input_tensors[0]);
 
-    int64_t* style_data = malloc(om->voice_size * sizeof(int64_t));
+    int64_t* style_data = calloc(om->voice_size ,sizeof(int64_t));
+    if (!style_data)
+        return -1;
     for (size_t i = 0; i < om->voice_size; i++) {
         style_data[i] = (int64_t)om->voice[i];
     }
-    // Dimensions for style (example: [style_len])
+
     int64_t style_shape[] = {1, (int64_t)style_len };
     om->api->CreateTensorWithDataAsOrtValue(
         om->memory_info, om->voice,
@@ -123,11 +127,6 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
         style_shape, 2, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
         &input_tensors[1]);
 
-    /*OrtAllocator* allocator = NULL;
-    om->api->GetAllocatorWithDefaultOptions(&allocator);
-    char* first_output_name = NULL;
-    om->api->SessionGetOutputName(om->session, 0, allocator, &first_output_name);*/
-    // Dimensions for speed (single float -> shape [1])
     int64_t speed_shape[] = { 1 };
     float speed_array[1] = { speed_value };
     om->api->CreateTensorWithDataAsOrtValue(
@@ -154,6 +153,7 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
     }
    
     free(input_ids_data);
+    free(style_data);
 	return 0;
 }
 int onnx_destroy(onnx_manager* om)
@@ -190,16 +190,7 @@ int onnx_destroy(onnx_manager* om)
     }
     return 0;
 }
-static void print_last_error(const char* msg) {
-    DWORD err = GetLastError();
-    if (!err) { fprintf(stderr, "%s\n", msg); return; }
-    LPSTR buf = NULL;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&buf, 0, NULL);
-    fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
-    if (buf) LocalFree(buf);
-}
+
 static int is_little_endian(void) {
     uint16_t x = 1;
     return *(uint8_t*)&x == 1;

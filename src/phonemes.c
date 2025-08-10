@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <wchar.h>
-#pragma warning(suppress : 4996)
+#include <locale.h>
 static const int AUDIO_OUTPUT_RETRIEVAL = 1;
 static const wchar_t* PAD = L"$";
 static const wchar_t* PUNCT = L";:,.!?¡¿—…“«»\"\" ";
@@ -51,7 +51,7 @@ static void tc_destroy(text_cleaner* tc);
 static int tc_lookup(const text_cleaner* tc, wchar_t ch);
 static int* tc_encode(const text_cleaner* tc, const wchar_t* text, size_t* out_len);
 static int ensure_capacity(wchar_t** buf, size_t* cap, size_t need_chars);
-static void print_last_error(const char* msg);
+
 int pm_create(phonemes_manager** pm)
 {
 	(*pm) = calloc(sizeof(phonemes_manager), 1);
@@ -64,37 +64,37 @@ int pm_init(phonemes_manager* pm)
 {
     if (!pm)
         return -1;
-    HMODULE h = os_load_library("libespeak-ng.dll");
+    HMODULE h = os_load_library(ESPEAK_DLL);
     if (!h)
     {
-        print_last_error("Unable to load libespeak-ng.dll");
+        os_print_last_error("Unable to load espeak library");
         return -1;
     }
     pm->espeak_Initialize = (espeak_Initialize_t)os_get_function(h, "espeak_Initialize");
     if (!pm->espeak_Initialize)
     {
-        print_last_error("Unable to load espeak_Initialize");
+        os_print_last_error("Unable to load espeak_Initialize");
         return -1;
     }
 
     pm->espeak_SetVoiceByName = (espeak_SetVoiceByName_t)os_get_function(h, "espeak_SetVoiceByName");
     if (!pm->espeak_SetVoiceByName)
     {
-        print_last_error("Unable to load espeak_SetVoiceByName");
+        os_print_last_error("Unable to load espeak_SetVoiceByName");
         return -1;
     }
 
     pm->espeak_TextToPhonemes = (espeak_TextToPhonemes_t)os_get_function(h, "espeak_TextToPhonemes");
     if (!pm->espeak_TextToPhonemes)
     {
-        print_last_error("Unable to load espeak_TextToPhonemes");
+        os_print_last_error("Unable to load espeak_TextToPhonemes");
         return -1;
     }
 
     pm->espeak_Terminate = (espeak_Terminate_t)os_get_function(h, "espeak_Terminate");
     if (!pm->espeak_Terminate)
     {
-        print_last_error("Unable to load espeak_Terminate");
+        os_print_last_error("Unable to load espeak_Terminate");
         return -1;
     }
     int sr = pm->espeak_Initialize(AUDIO_OUTPUT_RETRIEVAL,500, 0, 0);
@@ -107,6 +107,7 @@ int pm_init(phonemes_manager* pm)
 }
 int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* destination_len)
 {
+    setlocale(LC_ALL, "en_US.UTF-8");
     if (!pm || !text || !destination || !destination_len)
     {
          fprintf(stderr, "Something is null\n"); 
@@ -128,12 +129,11 @@ int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* 
         if (phon[0] == '\0') continue;
 
         // Determine how many wide chars needed (excluding NUL)
-        int need_no_nul = MultiByteToWideChar(CP_UTF8, 0, phon, -1, NULL, 0) - 1;
-        if (need_no_nul < 0) {
+        size_t need_no_nul = mbstowcs(NULL, phon, 0); // counts characters (not bytes), no NUL added
+        if (need_no_nul == (size_t)-1) {
             fwprintf(stderr, L"Conversion size query failed\n");
             return -1;
         }
-
         // Space separator between chunks (only if not first)
         size_t extra_sep = (out_len > 0) ? 1 : 0;
 
@@ -148,15 +148,10 @@ int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* 
             out[out_len++] = L' ';
         }
 
-        // Convert directly into the destination tail (include NUL for convenience)
-        int written = MultiByteToWideChar(
-            CP_UTF8, 0,
-            phon, -1,
-            out + out_len,
-            (int)(out_cap - out_len)   // plenty, we ensured capacity
-        );
-        if (written <= 0) {
-            fwprintf(stderr, L"UTF-8→UTF-16 conversion failed\n");
+        //// Convert directly into the destination tail (include NUL for convenience)
+        size_t written = mbstowcs(out + out_len, phon, out_cap - out_len);
+        if (written == (size_t)-1) {
+            fwprintf(stderr, L"Conversion failed\n");
             return -1;
         }
 
@@ -278,13 +273,3 @@ static int ensure_capacity(wchar_t** buf, size_t* cap, size_t need_chars) {
 }
 
 
-static void print_last_error(const char* msg) {
-    DWORD err = GetLastError();
-    if (!err) { fprintf(stderr, "%s\n", msg); return; }
-    LPSTR buf = NULL;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&buf, 0, NULL);
-    fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
-    if (buf) LocalFree(buf);
-}
