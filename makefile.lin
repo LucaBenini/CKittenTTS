@@ -17,6 +17,7 @@ SRCS := \
   $(SRC_DIR)/onnx.c \
   $(SRC_DIR)/phonemes.c \
   $(SRC_DIR)/wav.c \
+  $(SRC_DIR)/kittentts.c \
   $(SRC_DIR)/os.c
 
 # Objects (under OBJ_DIR)
@@ -51,6 +52,7 @@ $(OBJ_DIR)/main.o:     $(SRC_DIR)/main.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
 $(OBJ_DIR)/onnx.o:     $(SRC_DIR)/onnx.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
 $(OBJ_DIR)/phonemes.o: $(SRC_DIR)/phonemes.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
 $(OBJ_DIR)/wav.o:      $(SRC_DIR)/wav.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
+$(OBJ_DIR)/kittentts.o:      $(SRC_DIR)/kittentts.c $(SRC_DIR)/kittentts.h $(SRC_DIR)/os.h
 $(OBJ_DIR)/os.o:       $(SRC_DIR)/os.c $(SRC_DIR)/os.h
 
 # Clean

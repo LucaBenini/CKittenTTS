@@ -1,24 +1,35 @@
 ﻿#include "kittentts.h"
-#define MODEL_PATH "kitten_tts_nano_v0_1.onnx"
-#define VOICE_PATH "expr-voice-2-m.bin"
-int main(void)
+
+int main(int argc, char* argv[])
 {
+    int rc = 0;
 
-    const char* text = "Kitten TTS is an open-source series of tiny and expressive Text-to-Speech models for on-device applications. Our smallest model is less than 25 megabytes.";
+    kt_params* kp = NULL;
+    phonemes_manager* pm = NULL;
+    onnx_manager* om = NULL;
 
-    phonemes_manager* pm;
-    pm_create(&pm);
-    pm_init(pm);
-    int* input_ids;
-    size_t input_ids_len;
-    pm_encode(pm, text, &input_ids, &input_ids_len);
-   
+    // --- Create & load/validate params ---
+    if ((rc = kt_create(&kp)) != 0) goto cleanup;
+    if ((rc = kt_load(kp, argc, argv)) != 0) goto cleanup;      // prints usage on its own
+    if ((rc = kt_validate(kp)) != 0) goto cleanup;
 
-    onnx_manager* om;
-    onnx_create(&om);
-    onnx_init(om,MODEL_PATH, VOICE_PATH);
-    onnx_run(om, input_ids, input_ids_len,"audio1.wav");
-    onnx_destroy(om);
+    // --- Create managers ---
+    if ((rc = pm_create(&pm)) != 0) goto cleanup;
+    if ((rc = onnx_create(&om)) != 0) goto cleanup;
 
-    return 0;
+    // --- Initialize managers ---
+    if ((rc = pm_init(pm)) != 0) goto cleanup;
+    if ((rc = onnx_init(om, kp)) != 0) goto cleanup;
+
+    // --- Run pipeline ---
+    if ((rc = pm_encode(pm, kp)) != 0) goto cleanup;
+    if ((rc = onnx_run(om, kp)) != 0) goto cleanup;
+
+cleanup:
+    // Destroy in reverse order; guard NULLs in case creation failed.
+    if (om) onnx_destroy(om);
+    if (pm) pm_destroy(pm);
+    if (kp) kt_destroy(kp);
+
+    return rc;
 }

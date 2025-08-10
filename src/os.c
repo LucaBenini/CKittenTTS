@@ -56,6 +56,10 @@ void os_print_last_error(const char* msg) {
     fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
     if (buf) LocalFree(buf);
 }
+int os_file_exists(const char* file_path)
+{
+    return _access(file_path, 04) == 0;
+}
 #else
 void* os_load_library(const char* dllname)
 {
@@ -76,5 +80,8 @@ void os_print_last_error(const char* msg)
    else
      fprintf(stderr, "%s\n", msg);
 }
-
+int os_file_exists(const char* file_path)
+{
+    return access(file_path, F_OK) == 0;
+}
 #endif

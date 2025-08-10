@@ -105,16 +105,16 @@ int pm_init(phonemes_manager* pm)
     }
 	return 0;
 }
-int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* destination_len)
+int pm_encode(phonemes_manager* pm, kt_params* kp)
 {
     setlocale(LC_ALL, "en_US.UTF-8");
-    if (!pm || !text || !destination || !destination_len)
+    if (!pm || !kp)
     {
          fprintf(stderr, "Something is null\n"); 
          return -1; 
     }
     // Prepare pointer-to-pointer for espeak_TextToPhonemes
-    wchar_t* pText =os_char_to_wchar(text);
+    wchar_t* pText =os_char_to_wchar(kp->run.message);
     wchar_t* p = pText;
     int textmode = espeakCHARS_WCHAR;
 
@@ -160,10 +160,10 @@ int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* 
         out[out_len] = L'\0';
 
     }
-    *destination = tc_encode(pm->cleaner, out, destination_len);
+    kp->run.input_ids= tc_encode(pm->cleaner, out, &kp->run.input_ids_len);
     free(pText);
     free(out);
-    if (!(*destination) || !destination_len)
+    if (!(*kp->run.input_ids) || !kp->run.input_ids_len)
     {
         return -1;
     }

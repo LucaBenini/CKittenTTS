@@ -25,7 +25,7 @@ int onnx_create(onnx_manager** om)
 	return 0;
 
 }
-int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
+int onnx_init(onnx_manager* om, kt_params* kp)
 {
     if (!om)
         return -1;
@@ -67,9 +67,9 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
         return -1;
     }
 #ifdef _WIN32
-    ORTCHAR_T* model_path_str = os_char_to_wchar(model_path);
+    ORTCHAR_T* model_path_str = os_char_to_wchar(kp->init.model_path);
 #else
-    ORTCHAR_T* model_path_str = strdup(model_path);
+    ORTCHAR_T* model_path_str = strdup(kp->init.model_path);
 #endif    
     om->api->CreateSession(om->env, model_path_str, om->session_options, &om->session);
     free(model_path_str);
@@ -78,7 +78,7 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
         os_print_last_error("Unable to api->CreateSession (==>the model is used here for the first time)");
         return -1;
     }
-    load_float32_array(voice_path, &om->voice, &om->voice_size);
+    load_float32_array(kp->init.voice_path, &om->voice, &om->voice_size);
     if (!om->voice)
     {
         os_print_last_error("Unable to load voice");
@@ -92,10 +92,11 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
     }
     return 0;
 }
-int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char * output_wav)
+int onnx_run(onnx_manager* om, kt_params* kp)
 {
     if (!om)
         return -1;
+    size_t input_ids_len = kp->run.input_ids_len;
     float speed_value = 1.0;
     const char* input_names[] = { "input_ids", "style", "speed" };
     OrtValue* input_tensors[3] = { NULL };
@@ -106,7 +107,7 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
     if (!input_ids_data)
         return -1;
     for (size_t i = 1; i < input_ids_len-1; i++) {
-        input_ids_data[i] = (int64_t)input_ids[i-1];
+        input_ids_data[i] = (int64_t)kp->run.input_ids[i-1];
     }
    
     int64_t style_len = om->voice_size;
@@ -149,7 +150,7 @@ int onnx_run(onnx_manager* om, int* input_ids, size_t input_ids_len,const char *
         om->api->ReleaseStatus(status);
         exit(EXIT_FAILURE);
     }
-    save_tensor_binary(om, output_tensors[0], output_wav);
+    save_tensor_binary(om, output_tensors[0], kp->run.output);
 
     for (int i = 0; i < 3; i++) {
         om->api->ReleaseValue(input_tensors[i]);
