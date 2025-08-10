@@ -2,6 +2,7 @@
 #ifdef _WIN32
 	#define _CRT_SECURE_NO_WARNINGS
 	#define ESPEAK_DLL "libespeak-ng.dll"
+        #define ONNX_DLL "onnxruntime.dll"
 #include <windows.h>
 #include <io.h>
 #define _CRT_SECURE_NO_WARNINGS
@@ -11,6 +12,7 @@
 
 #else
 #define ESPEAK_DLL "libespeak-ng"
+        #define ONNX_DLL "libonnx.so"
 #endif
 #include <stdlib.h>
 #include <string.h>

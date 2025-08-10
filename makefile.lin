@@ -30,7 +30,7 @@ LIBPATHS := -L.
 LIBS :=
 
 # Flags
-CFLAGS := -Wall -Wextra -O2 $(INCLUDES) -Wno-unused-result -Wno-unused-parameter
+CFLAGS := -Wall -Wextra -ggdb $(INCLUDES) -Wno-unused-result -Wno-unused-parameter
 LDFLAGS := $(LIBPATHS) $(LIBS)
 
 # Default target

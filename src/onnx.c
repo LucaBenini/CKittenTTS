@@ -29,7 +29,7 @@ int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
 {
     if (!om)
         return -1;
-    void* h = os_load_library("onnxruntime.dll");
+    void* h = os_load_library(ONNX_DLL);
     if (!h)
     {
         os_print_last_error("Unable to load onnxruntime.dll");
