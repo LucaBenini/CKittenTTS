@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <wchar.h>
-
+#pragma warning(suppress : 4996)
 static const int AUDIO_OUTPUT_RETRIEVAL = 1;
 static const wchar_t* PAD = L"$";
 static const wchar_t* PUNCT = L";:,.!?¡¿—…“«»\"\" ";
@@ -27,7 +27,7 @@ L"ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮ
 #define espeakPHONEMES_TIE     0x80
 
 typedef struct {
-	wchar_t* symbols;   // concatenated list of all allowed symbols
+    wchar_t* symbols;   // concatenated list of all allowed symbols
 	size_t   count;     // number of symbols
 } text_cleaner;
 /* Typedefs */
@@ -51,7 +51,7 @@ static void tc_destroy(text_cleaner* tc);
 static int tc_lookup(const text_cleaner* tc, wchar_t ch);
 static int* tc_encode(const text_cleaner* tc, const wchar_t* text, size_t* out_len);
 static int ensure_capacity(wchar_t** buf, size_t* cap, size_t need_chars);
-static void print_last_error(const wchar_t* msg);
+static void print_last_error(const char* msg);
 int pm_create(phonemes_manager** pm)
 {
 	(*pm) = calloc(sizeof(phonemes_manager), 1);
@@ -64,57 +64,57 @@ int pm_init(phonemes_manager* pm)
 {
     if (!pm)
         return -1;
-    HMODULE h = LoadLibraryA("libespeak-ng.dll");
+    HMODULE h = os_load_library("libespeak-ng.dll");
     if (!h)
     {
-        print_last_error(L"Unable to load libespeak-ng.dll");
+        print_last_error("Unable to load libespeak-ng.dll");
         return -1;
     }
-    pm->espeak_Initialize = (espeak_Initialize_t)GetProcAddress(h, "espeak_Initialize");
+    pm->espeak_Initialize = (espeak_Initialize_t)os_get_function(h, "espeak_Initialize");
     if (!pm->espeak_Initialize)
     {
-        print_last_error(L"Unable to load espeak_Initialize");
+        print_last_error("Unable to load espeak_Initialize");
         return -1;
     }
 
-    pm->espeak_SetVoiceByName = (espeak_SetVoiceByName_t)GetProcAddress(h, "espeak_SetVoiceByName");
+    pm->espeak_SetVoiceByName = (espeak_SetVoiceByName_t)os_get_function(h, "espeak_SetVoiceByName");
     if (!pm->espeak_SetVoiceByName)
     {
-        print_last_error(L"Unable to load espeak_SetVoiceByName");
+        print_last_error("Unable to load espeak_SetVoiceByName");
         return -1;
     }
 
-    pm->espeak_TextToPhonemes = (espeak_TextToPhonemes_t)GetProcAddress(h, "espeak_TextToPhonemes");
+    pm->espeak_TextToPhonemes = (espeak_TextToPhonemes_t)os_get_function(h, "espeak_TextToPhonemes");
     if (!pm->espeak_TextToPhonemes)
     {
-        print_last_error(L"Unable to load espeak_TextToPhonemes");
+        print_last_error("Unable to load espeak_TextToPhonemes");
         return -1;
     }
 
-    pm->espeak_Terminate = (espeak_Terminate_t)GetProcAddress(h, "espeak_Terminate");
+    pm->espeak_Terminate = (espeak_Terminate_t)os_get_function(h, "espeak_Terminate");
     if (!pm->espeak_Terminate)
     {
-        print_last_error(L"Unable to load espeak_Terminate");
+        print_last_error("Unable to load espeak_Terminate");
         return -1;
     }
     int sr = pm->espeak_Initialize(AUDIO_OUTPUT_RETRIEVAL,500, 0, 0);
-    if (sr <= 0) { fwprintf(stderr, L"Failed to initialize eSpeak-NG\n"); return -1; }
+    if (sr <= 0) { fprintf(stderr, "Failed to initialize eSpeak-NG\n"); return -1; }
     if (pm->espeak_SetVoiceByName("en")) {
-        fwprintf(stderr, L"Voice 'en' not found.\n");
+        fprintf(stderr, "Voice 'en' not found.\n");
         return -1;
     }
 	return 0;
 }
-int pm_encode(phonemes_manager* pm,const wchar_t* text, int** destination, size_t* destination_len)
+int pm_encode(phonemes_manager* pm,const char* text, int** destination, size_t* destination_len)
 {
     if (!pm || !text || !destination || !destination_len)
     {
-         fwprintf(stderr, L"Something is null\n"); 
+         fprintf(stderr, "Something is null\n"); 
          return -1; 
     }
     // Prepare pointer-to-pointer for espeak_TextToPhonemes
-    const wchar_t* p =text;
-
+    wchar_t* pText =os_char_to_wchar(text);
+    wchar_t* p = pText;
     int textmode = espeakCHARS_WCHAR;
 
     int phonememode = espeakPHONEMES_IPA;
@@ -166,11 +166,13 @@ int pm_encode(phonemes_manager* pm,const wchar_t* text, int** destination, size_
 
     }
     *destination = tc_encode(pm->cleaner, out, destination_len);
+    free(pText);
     free(out);
     if (!(*destination) || !destination_len)
     {
         return -1;
     }
+   
     return 0;
 }
 int pm_destroy(phonemes_manager* pm)
@@ -186,6 +188,8 @@ int pm_destroy(phonemes_manager* pm)
 	}
 	return 0;
 }
+
+
 
 static text_cleaner* tc_create(void) {
     text_cleaner* tc = (text_cleaner*)malloc(sizeof(text_cleaner));
@@ -274,13 +278,13 @@ static int ensure_capacity(wchar_t** buf, size_t* cap, size_t need_chars) {
 }
 
 
-static void print_last_error(const wchar_t* msg) {
+static void print_last_error(const char* msg) {
     DWORD err = GetLastError();
-    if (!err) { fwprintf(stderr, L"%s\n", msg); return; }
-    LPWSTR buf = NULL;
-    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    if (!err) { fprintf(stderr, "%s\n", msg); return; }
+    LPSTR buf = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPWSTR)&buf, 0, NULL);
-    fwprintf(stderr, L"%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? L": " : L"", buf ? buf : L"");
+        (LPSTR)&buf, 0, NULL);
+    fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
     if (buf) LocalFree(buf);
 }

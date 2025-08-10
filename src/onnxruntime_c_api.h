@@ -104,7 +104,7 @@ extern "C" {
 #ifdef _WIN32
 #define ORT_TSTR(X) L##X
 // When X is a macro, L##X is not defined. In this case, we need to use ORT_TSTR_ON_MACRO.
-#define ORT_TSTR_ON_MACRO(X) L"" X
+#define ORT_TSTR_ON_MACRO(X) "" X
 #else
 #define ORT_TSTR(X) X
 #define ORT_TSTR_ON_MACRO(X) X
@@ -3388,10 +3388,10 @@ struct OrtApi {
   /** \brief Get a pointer to the requested version of the Execution Provider specific
    * API extensions to the OrtApi
    * \param[in] provider_name The name of the execution provider name. Currently only the following
-   * values are supported: "DML".
+   * values are supported: "DM".
    * \param[in] version Must be ::ORT_API_VERSION.
    * \param[out] provider_api A void pointer containing a reference to the execution provider versioned api structure.
-   * For example, the provider_api pointer can be cast to the OrtDmlApi* when the provider_name is "DML".
+   * For example, the provider_api pointer can be cast to the OrtDmlApi* when the provider_name is "DM".
    *
    * \snippet{doc} snippets.dox OrtStatus Return Value
    */
@@ -3712,7 +3712,7 @@ struct OrtApi {
    *
    * QNN supported keys:
    *   "backend_type": Type of QNN backend. Specifies a backend path that is the associated QNN backend library file
-   *      name. E.g., given backend type "htp", on Windows, the backend path would be "QnnHtp.dll", and on other
+   *      name. E.g., given backend type "htp", on Windows, the backend path would be "QnnHtp.dl", and on other
    *      platforms, it would be "libQnnHtp.so". Mutually exclusive with "backend_path".
    *      Available options:
    *      -# "cpu"
@@ -3720,7 +3720,7 @@ struct OrtApi {
    *      -# "htp": Default.
    *      -# "saver"
    *   "backend_path": File path to QNN backend library. Mutually exclusive with "backend_type".
-   *   "profiling_level": QNN profiling level.
+   *   "profiling_leve": QNN profiling level.
    *      Available options:
    *      -# "off": Default.
    *      -# "basic"
@@ -3746,7 +3746,7 @@ struct OrtApi {
    *   "qnn_context_priority": QNN context priority.
    *      Available options:
    *      -# "low"
-   *      -# "normal": Default.
+   *      -# "norma": Default.
    *      -# "normal_high"
    *      -# "high"
    *   "htp_graph_finalization_optimization_mode": Set the optimization mode for graph finalization on the HTP backend.
@@ -3756,7 +3756,7 @@ struct OrtApi {
    *      -# "2": Longer preparation time, more optimal graph.
    *      -# "3": Longest preparation time, most likely even more optimal graph. See QNN SDK documentation for specific
    *        details.
-   *   "soc_model": The SoC model number. Refer to the QNN SDK documentation for valid values.
+   *   "soc_mode": The SoC model number. Refer to the QNN SDK documentation for valid values.
    *      Defaults to "0" (unknown).
    *   "htp_arch": The minimum HTP architecture the driver will use to select compatible QNN operators.
    *      Available options:
@@ -3924,7 +3924,7 @@ struct OrtApi {
    * Semicolon isolates configurations among threads, while comma split processors where ith thread expected to attach to.
    * e.g. 1,2,3;4,5
    * specifies affinities for two threads, with the 1st thread attach to the 1st, 2nd, and 3rd processor, and 2nd thread to the 4th and 5th.
-   * To ease the configuration, an "interval" is also allowed:
+   * To ease the configuration, an "interva" is also allowed:
    * e.g. 1-8;8-16;17-24
    * orders that the 1st thread runs on first eight processors, 2nd thread runs on next eight processors, and so forth.
    * Note:
@@ -4699,7 +4699,7 @@ struct OrtApi {
    * \param[in] context
    * \param[in] fn Function accepting usr_data and an integer as iterator
    * \param[in] total The number of times fn is to be invoked
-   * \param[in] num_batch Number of batches by which the "total" is to be divided in maximum. When zero, there is no limit
+   * \param[in] num_batch Number of batches by which the "tota" is to be divided in maximum. When zero, there is no limit
    * \param[in] usr_data User data to be passed back to fn
    *
    * \since Version 1.17.
@@ -4977,7 +4977,7 @@ struct OrtApi {
    * into an EPContext node that wraps a provider-specific binary representation of the subgraph.
    * For more details about the EPContext design, refer to:
    *  \htmlonly
-   *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.html">EPContext design document.</a>
+   *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.htm">EPContext design document.</a>
    *  \endhtmlonly
    *
    * \return Compile API struct instance.
@@ -5774,7 +5774,7 @@ struct OrtModelEditorApi {
  * binary representation of the subgraph.
  * For more details about the EPContext design, refer to:
  *  \htmlonly
- *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.html">EPContext design document.</a>
+ *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.htm">EPContext design document.</a>
  *  \endhtmlonly
  *
  * Example (error handling not shown):
@@ -5816,7 +5816,7 @@ struct OrtCompileApi {
 
   /** \brief Sets the file path to the input ONNX model to compile.
    *
-   * The input model's location (e.g., file path or memory buffer) must be set with either
+   * The input mode's location (e.g., file path or memory buffer) must be set with either
    * ModelCompilationOptions_SetInputModelPath or ModelCompilationOptions_SetInputModelFromBuffer.
    *
    * \param[in] model_compile_options The OrtModelCompilationOptions instance.
@@ -5831,7 +5831,7 @@ struct OrtCompileApi {
 
   /** \brief Sets the buffer that stores the bytes of the loaded ONNX model to compile.
    *
-   * The input model's location (e.g., file path or memory buffer) must be set with either
+   * The input mode's location (e.g., file path or memory buffer) must be set with either
    * ModelCompilationOptions_SetInputModelPath or ModelCompilationOptions_SetInputModelFromBuffer.
    *
    * \param[in] model_compile_options The OrtModelCompilationOptions instance.
@@ -5849,11 +5849,11 @@ struct OrtCompileApi {
 
   /** \brief Sets the file path for the output ONNX model generated by CompileModel.
    *
-   * The output model's location (e.g., file path or memory buffer) can be set with either
+   * The output mode's location (e.g., file path or memory buffer) can be set with either
    * ModelCompilationOptions_SetOutputModelPath or ModelCompilationOptions_SetOutputModelBuffer.
    *
-   * If the output model's location is not set, ONNX Runtime will generate an output file with a path based on
-   * the input model's file path. Examples:
+   * If the output mode's location is not set, ONNX Runtime will generate an output file with a path based on
+   * the input mode's file path. Examples:
    *   /Path/my_model.onnx -> /Path/my_model_ctx.onnx
    *   /Path/my_model -> /Path/my_model_ctx.onnx
    *
@@ -5891,11 +5891,11 @@ struct OrtCompileApi {
    *
    * The caller passes an OrtAllocator that ONNX Runtime uses to allocate memory for the buffer.
    *
-   * The output model's location (e.g., file path or memory buffer) can be set with either
+   * The output mode's location (e.g., file path or memory buffer) can be set with either
    * ModelCompilationOptions_SetOutputModelPath or ModelCompilationOptions_SetOutputModelBuffer.
    *
-   * If the output model's location is not set, ONNX Runtime will generate an output file with a path based on
-   * the input model's file path. Examples:
+   * If the output mode's location is not set, ONNX Runtime will generate an output file with a path based on
+   * the input mode's file path. Examples:
    *   /Path/my_model.onnx -> /Path/my_model_ctx.onnx
    *   /Path/my_model -> /Path/my_model_ctx.onnx
    *
@@ -5925,7 +5925,7 @@ struct OrtCompileApi {
    *
    * More details relate to EPContext design refers to:
    *  \htmlonly
-   *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.html">EPContext design document.</a>
+   *  <a href="https://onnxruntime.ai/docs/execution-providers/EP-Context-Design.htm">EPContext design document.</a>
    *  \endhtmlonly
    *
    * \param[in] model_compile_options The OrtModelCompilationOptions instance.

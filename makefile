@@ -18,14 +18,16 @@ SRCS = \
   $(SRC_DIR)\main.c \
   $(SRC_DIR)\onnx.c \
   $(SRC_DIR)\phonemes.c \
-  $(SRC_DIR)\wav.c
+  $(SRC_DIR)\wav.c \
+  $(SRC_DIR)\os.c
 
 # Objects (under OBJ_DIR)
 OBJS = \
   $(OBJ_DIR)\main.obj \
   $(OBJ_DIR)\onnx.obj \
   $(OBJ_DIR)\phonemes.obj \
-  $(OBJ_DIR)\wav.obj
+  $(OBJ_DIR)\wav.obj \
+  $(OBJ_DIR)\os.obj \
 
 # Include & lib paths (adjust as needed)
 INCLUDES = /I$(SRC_DIR)
@@ -56,10 +58,11 @@ $(BIN_DIR)\$(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) /Fo$@ /c $<
 
 # Optional explicit deps (handy if you add headers later)
-$(OBJ_DIR)\main.obj:     $(SRC_DIR)\main.c
-$(OBJ_DIR)\onnx.obj:     $(SRC_DIR)\onnx.c
-$(OBJ_DIR)\phonemes.obj: $(SRC_DIR)\phonemes.c
-$(OBJ_DIR)\wav.obj:      $(SRC_DIR)\wav.c
+$(OBJ_DIR)\main.obj:     $(SRC_DIR)\main.c $(SRC_DIR)\kittentts.h $(SRC_DIR)\os.h
+$(OBJ_DIR)\onnx.obj:     $(SRC_DIR)\onnx.c $(SRC_DIR)\kittentts.h $(SRC_DIR)\os.h
+$(OBJ_DIR)\phonemes.obj: $(SRC_DIR)\phonemes.c $(SRC_DIR)\kittentts.h $(SRC_DIR)\os.h
+$(OBJ_DIR)\wav.obj:      $(SRC_DIR)\wav.c $(SRC_DIR)\kittentts.h $(SRC_DIR)\os.h
+$(OBJ_DIR)\os.obj:      $(SRC_DIR)\os.c $(SRC_DIR)\os.h
 
 # Clean
 clean:

@@ -12,8 +12,8 @@ typedef struct onnx_manager
         float* voice;
         size_t voice_size;
 } onnx_manager;
-static int load_float32_array(const wchar_t* path, float** out_data, size_t* out_count);
-static void print_last_error(const wchar_t* msg);
+static int load_float32_array(const char* path, float** out_data, size_t* out_count);
+static void print_last_error(const char* msg);
 static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tensors, const char* filename);
 static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path);
 int write_wav_float32_mono(const char* path, const float* samples,
@@ -26,63 +26,65 @@ int onnx_create(onnx_manager** om)
 	return 0;
 
 }
-int onnx_init(onnx_manager* om, const wchar_t* model_path, const wchar_t* voice_path)
+int onnx_init(onnx_manager* om, const char* model_path, const char* voice_path)
 {
     if (!om)
         return -1;
-    HMODULE h = LoadLibraryA("onnxruntime.dll");
+    HMODULE h = os_load_library("onnxruntime.dll");
     if (!h)
     {
-        print_last_error(L"Unable to load espeak-ng.dll");
+        print_last_error("Unable to load onnxruntime.dll");
         return -1;
     }
     
-    OrtGetApiBase_t OrtGetApiBase_ptr = (OrtGetApiBase_t)GetProcAddress(h, "OrtGetApiBase");
+    OrtGetApiBase_t OrtGetApiBase_ptr = (OrtGetApiBase_t)os_get_function(h, "OrtGetApiBase");
     if (!OrtGetApiBase_ptr)
     {
-        print_last_error(L"Unable to load OrtGetApiBase");
+        print_last_error("Unable to load OrtGetApiBase");
         return -1;
     }
     OrtApiBase* base =OrtGetApiBase_ptr();
     if (!base)
     {
-        print_last_error(L"Unable to load OrtApiBase");
+        print_last_error("Unable to load OrtApiBase");
         return -1;
     }
     om->api = base->GetApi(ORT_API_VERSION);
     if (!om->api)
     {
-        print_last_error(L"Unable to load Ort API");
+        print_last_error("Unable to load Ort API");
         return -1;
     }
     om->api->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "kittentts", &om->env);
     if (!om->env)
     {
-        print_last_error(L"Unable to api->CreateEnv");
+        print_last_error("Unable to api->CreateEnv");
         return -1;
     }
     om->api->CreateSessionOptions(&om->session_options);
     if (!om->env)
     {
-        print_last_error(L"Unable to api->CreateSessionOptions");
+        print_last_error("Unable to api->CreateSessionOptions");
         return -1;
     }
-    om->api->CreateSession(om->env, model_path, om->session_options, &om->session);
+	ORTCHAR_T* model_path_str = os_char_to_wchar(model_path);
+    om->api->CreateSession(om->env, model_path_str, om->session_options, &om->session);
+	free(model_path_str);
     if (!om->session)
     {
-        print_last_error(L"Unable to api->CreateSession (==>the model is used here for the first time)");
+        print_last_error("Unable to api->CreateSession (==>the model is used here for the first time)");
         return -1;
     }
     load_float32_array(voice_path, &om->voice, &om->voice_size);
     if (!om->voice)
     {
-        print_last_error(L"Unable to load voice");
+        print_last_error("Unable to load voice");
         return -1;
     }
     om->api->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &om->memory_info);
     if (!om->memory_info)
     {
-        print_last_error(L"Unable to CreateCpuMemoryInfo");
+        print_last_error("Unable to CreateCpuMemoryInfo");
         return -1;
     }
     return 0;
@@ -188,21 +190,21 @@ int onnx_destroy(onnx_manager* om)
     }
     return 0;
 }
-static void print_last_error(const wchar_t* msg) {
+static void print_last_error(const char* msg) {
     DWORD err = GetLastError();
-    if (!err) { fwprintf(stderr, L"%s\n", msg); return; }
-    LPWSTR buf = NULL;
-    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    if (!err) { fprintf(stderr, "%s\n", msg); return; }
+    LPSTR buf = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPWSTR)&buf, 0, NULL);
-    fwprintf(stderr, L"%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? L": " : L"", buf ? buf : L"");
+        (LPSTR)&buf, 0, NULL);
+    fprintf(stderr, "%s (GetLastError=%lu)%s%s", msg, (unsigned long)err, buf ? ": " : "", buf ? buf : "");
     if (buf) LocalFree(buf);
 }
 static int is_little_endian(void) {
     uint16_t x = 1;
     return *(uint8_t*)&x == 1;
 }
-static int load_float32_array(const wchar_t* path, float** out_data, size_t* out_count) {
+static int load_float32_array(const char* path, float** out_data, size_t* out_count) {
 
     if (!path || !out_data || !out_count) return 1;
 
@@ -211,10 +213,12 @@ static int load_float32_array(const wchar_t* path, float** out_data, size_t* out
 
     FILE* f = NULL;
 #ifdef _WIN32
-    if (_wfopen_s(&f, path, L"rb") != 0 || !f) return 2;
+    f=fopen(path, "rb");
+	if(!f)
+		return 2;
 #else
     // If you ever need POSIX: convert 'path' to UTF-8 and use fopen().
-    // For now we assume Windows usage because of wchar_t path.
+    // For now we assume Windows usage because of char path.
     f = NULL; return 2;
 #endif
 
@@ -254,14 +258,14 @@ static int load_float32_array(const wchar_t* path, float** out_data, size_t* out
 // Save first output to binary file
 static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tensors, const char* filename) {
     if (!output_tensors || !output_tensors[0]) {
-        fwprintf(stderr, L"No outputs to save.\n");
+        fprintf(stderr, "No outputs to save.\n");
         return;
     }
 
     int is_tensor;
     ort->IsTensor(output_tensors[0], &is_tensor);
     if (!is_tensor) {
-        fwprintf(stderr, L"First output is not a tensor.\n");
+        fprintf(stderr, "First output is not a tensor.\n");
         return;
     }
 
@@ -288,7 +292,7 @@ static void save_first_output_to_file(const OrtApi* ort, OrtValue** output_tenso
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   elem_size = sizeof(int32_t); break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   elem_size = sizeof(uint8_t); break;
     default:
-        fwprintf(stderr, L"Unsupported element type: %d\n", type);
+        fprintf(stderr, "Unsupported element type: %d\n", type);
         ort->ReleaseTensorTypeAndShapeInfo(info);
         return;
     }
@@ -330,7 +334,7 @@ static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* p
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:   elem_size = sizeof(int64_t); break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:   elem_size = sizeof(int32_t); break;
     case ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:   elem_size = sizeof(uint8_t); break;
-    default: fwprintf(stderr, L"Unsupported element type: %d\n", et);
+    default: fprintf(stderr, "Unsupported element type: %d\n", et);
     }
     write_wav_float32_mono(path, data_ptr,(uint32_t) n_elem, 24000);
     
