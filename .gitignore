@@ -1,3 +1,4 @@
+bin/*wav
 onnx/
 vs/
 # Prerequisites
