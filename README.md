@@ -50,13 +50,13 @@ sudo ldconfig
 **Windows (Developer Command Prompt):**
 
 ```powershell
-nmake -f makefile
+nmake -f makefile.win
 ```
 
 **Linux (GNU Make):**
 
 ```bash
-make
+make -f makefile.lin
 ```
 
 This will produce the executable in `bin/`:
