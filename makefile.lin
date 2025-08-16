@@ -30,8 +30,9 @@ LIBPATHS := -L.
 # Libraries (adjust if needed, e.g. -lonnxruntime)
 LIBS := -ldl
 
+OPT := -O3 -fstrict-aliasing -funroll-loops
 # Flags
-CFLAGS := -Wall -Wextra -O3 $(INCLUDES) -Wno-unused-result -Wno-unused-parameter 
+CFLAGS := -Wall -Wextra -O3 $(INCLUDES) -Wno-unused-result -Wno-unused-parameter $(OPT)
 LDFLAGS := $(LIBPATHS) $(LIBS)
 
 # Default target

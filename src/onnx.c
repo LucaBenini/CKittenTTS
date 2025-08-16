@@ -66,9 +66,16 @@ int onnx_init(onnx_manager* om, kt_params* kp)
         os_print_last_error("Unable to api->CreateSessionOptions");
         return -1;
     }
-	
-	om->api->SetSessionExecutionMode(om->session_options,0);
-	//om->api->SetSessionGraphOptimizationLevel(om->session_options,0);
+    // Fast defaults (CPU)
+    om->api->SetSessionExecutionMode(om->session_options, 0);        // 0=SEQUENTIAL, 1=PARALLEL 0GOOD
+    om->api->SetSessionGraphOptimizationLevel(om->session_options, 1); // 0=DISABLE, 1=BASIC, 2=EXT, 99=ALL 1GOOD
+
+    // Threading (tune these two; start here)
+    //om->api->SetIntraOpNumThreads(om->session_options, /*cores*/ 4); // heavy ops (GEMM/conv) parallelism
+    //om->api->SetInterOpNumThreads(om->session_options, 1);           // parallel nodes/branches
+
+    //om->api->EnableCpuMemArena(om->session_options);
+    //om->api->EnableMemPattern(om->session_options);	
     
     /*
     OrtCUDAProviderOptionsV2* cuda_opts = NULL;
@@ -125,7 +132,6 @@ int onnx_run(onnx_manager* om, kt_params* kp)
     for (size_t i = 1; i < input_ids_len-1; i++) {
         input_ids_data[i] = (int64_t)kp->run.input_ids[i-1];
     }
-   
     int64_t style_len = om->voice_size;
     om->api->CreateTensorWithDataAsOrtValue(
         om->memory_info, input_ids_data,
@@ -272,7 +278,6 @@ static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, void** buffer
 
     ONNXTensorElementDataType et;
     om->api->GetTensorElementType(info, &et);
-    printf("et: %d", et);
     void* data_ptr = NULL;
     om->api->GetTensorMutableData(tensor, &data_ptr);
     *buffer = calloc(n_elem, sizeof(float));
