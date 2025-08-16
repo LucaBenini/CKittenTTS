@@ -9,7 +9,7 @@
 #include <string.h>
 #include <locale.h>
 #include <stdio.h>
-
+#include <time.h>
 typedef struct kt_params_init
 {
 	const char* model_path;
@@ -18,11 +18,13 @@ typedef struct kt_params_init
 
 typedef struct kt_params_run
 {
-	const char* output;
+	const char* output_file;
 	const char* message;
 	float speed;
 	int* input_ids;
 	size_t input_ids_len;
+	void* output;
+	size_t output_len;
 }kt_params_run;
 typedef struct kt_params
 {

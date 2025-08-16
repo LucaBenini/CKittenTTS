@@ -9,10 +9,12 @@
 	#ifdef UNICODE
 		#undef UNICODE
 	#endif
+	#include <stdint.h>
 #else
 	#include <unistd.h>
 	#include <dlfcn.h>
 	#include <stdio.h>
+	#include <stdint.h>
 	#define ESPEAK_DLL "libespeak-ng.so"
 	#define ONNX_DLL "libonnxruntime.so"
 #endif
@@ -26,3 +28,4 @@ void* os_load_library(const char* dllname);
 void* os_get_function(void* dll, const char* funcname);
 void os_print_last_error(const char* msg);
 int os_file_exists(const char* file_path);
+int os_write_wav_float32_mono(const char* path, const float* samples,uint32_t nframes, uint32_t sample_rate /* e.g., 24000 */);

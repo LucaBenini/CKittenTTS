@@ -23,7 +23,7 @@ int kt_load(kt_params* kp, int argc, char* argv[])
 	// Assign parameters in order
 	kp->init.model_path = argv[1];
 	kp->init.voice_path = argv[2];
-	kp->run.output = argv[3];
+	kp->run.output_file = argv[3];
 	kp->run.message = argv[4];
 	kp->run.speed = (float)atof(argv[5]);
 
@@ -44,7 +44,7 @@ int kt_validate(kt_params* kp)
 		fprintf(stderr, "Unable to read voice: %s\n", kp->init.voice_path ? kp->init.voice_path : "(null)");
 		return -1;
 	}
-	if (!kp->run.output)
+	if (!kp->run.output_file)
 	{
 		fprintf(stderr, "Missing output\n");
 		return -1;
@@ -70,6 +70,11 @@ int kt_destroy(kt_params* kp)
 			free(kp->run.input_ids);
 			kp->run.input_ids = 0;
 			kp->run.input_ids_len = 0;
+		}
+		if (kp->run.output)
+		{
+			free(kp->run.output);
+			kp->run.output = 0;
 		}
 		free(kp);
 	}

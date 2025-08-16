@@ -18,7 +18,7 @@ static int write_u32_le(FILE* f, uint32_t v) {
 }
 
 /* Write a mono float32 WAV. samples = pointer to nframes floats in range ~[-1,1]. */
-int write_wav_float32_mono(const char* path, const float* samples,
+int os_write_wav_float32_mono(const char* path, const float* samples,
     uint32_t nframes, uint32_t sample_rate /* e.g., 24000 */)
 {
     const uint16_t num_channels = 1;

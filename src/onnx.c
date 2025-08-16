@@ -14,9 +14,9 @@ typedef struct onnx_manager
 } onnx_manager;
 static int load_float32_array(const char* path, float** out_data, size_t* out_count);
 
-static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path);
-int write_wav_float32_mono(const char* path, const float* samples,
-    uint32_t nframes, uint32_t sample_rate /* e.g., 24000 */);
+static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, void** buffer, size_t* len);
+//int write_wav_float32_mono(const char* path, const float* samples,
+//    uint32_t nframes, uint32_t sample_rate /* e.g., 24000 */);
 int onnx_create(onnx_manager** om)
 {
 	(*om) = calloc(sizeof(onnx_manager), 1);
@@ -66,6 +66,22 @@ int onnx_init(onnx_manager* om, kt_params* kp)
         os_print_last_error("Unable to api->CreateSessionOptions");
         return -1;
     }
+	
+	om->api->SetSessionExecutionMode(om->session_options,0);
+	//om->api->SetSessionGraphOptimizationLevel(om->session_options,0);
+    
+    /*
+    OrtCUDAProviderOptionsV2* cuda_opts = NULL;
+    om->api->CreateCUDAProviderOptions(& cuda_opts);
+    const char* keys[] = { "device_id", "do_copy_in_default_stream" };
+    const char* vals[] = { "0", "1" }; // <- 1 is critical for Loop on CUDA
+    om->api->UpdateCUDAProviderOptions(cuda_opts, keys, vals, 2);
+
+    om->api->EnableProfiling(om->session_options, L"KITTEN.JSON");
+    om->api->SetSessionLogSeverityLevel(om->session_options, 1);
+    om->api->SessionOptionsAppendExecutionProvider_CUDA_V2(om->session_options, cuda_opts);
+    */
+    
 #ifdef _WIN32
     ORTCHAR_T* model_path_str = os_char_to_wchar(kp->init.model_path);
 #else
@@ -140,7 +156,6 @@ int onnx_run(onnx_manager* om, kt_params* kp)
         &input_tensors[2]);
     const char* output_names[1] = { "waveform" };
     OrtValue* output_tensors[1] = { NULL }; 
-
     OrtStatus* status=om->api->Run(om->session, NULL,
         input_names, (const OrtValue* const*)input_tensors, 3,
         output_names, 1,(OrtValue **) &output_tensors);
@@ -150,7 +165,7 @@ int onnx_run(onnx_manager* om, kt_params* kp)
         om->api->ReleaseStatus(status);
         exit(EXIT_FAILURE);
     }
-    save_tensor_binary(om, output_tensors[0], kp->run.output);
+    save_tensor_binary(om, output_tensors[0], &kp->run.output,&kp->run.output_len);
 
     for (int i = 0; i < 3; i++) {
         om->api->ReleaseValue(input_tensors[i]);
@@ -244,7 +259,7 @@ static int load_float32_array(const char* path, float** out_data, size_t* out_co
     *out_count = count;
     return 0;
 }
-static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* path) {
+static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, void** buffer,size_t* len) {
     int is_tensor = 0;
     om->api->IsTensor(tensor, &is_tensor);
     if (!is_tensor) { fprintf(stderr, "Not a tensor\n"); return; }
@@ -257,11 +272,13 @@ static void save_tensor_binary(onnx_manager* om, OrtValue* tensor, const char* p
 
     ONNXTensorElementDataType et;
     om->api->GetTensorElementType(info, &et);
-
+    printf("et: %d", et);
     void* data_ptr = NULL;
     om->api->GetTensorMutableData(tensor, &data_ptr);
-
-    write_wav_float32_mono(path, data_ptr,(uint32_t) n_elem, 24000);
+    *buffer = calloc(n_elem, sizeof(float));
+    memcpy(*buffer, data_ptr, sizeof(float) * n_elem);
+    *len = n_elem;
+    //write_wav_float32_mono(path, data_ptr,(uint32_t) n_elem, 24000);
     
     om->api->ReleaseTensorTypeAndShapeInfo(info);
 }
