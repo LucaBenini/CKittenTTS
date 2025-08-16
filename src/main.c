@@ -35,17 +35,18 @@ int main(int argc, char* argv[])
     if ((rc = pm_init(pm)) != 0) goto cleanup;
     if ((rc = onnx_init(om, kp)) != 0) goto cleanup;
 
-
-    for(int i =0; i < 10; i++)
+    for(int i =0; i < 101; i++)
       {
 #ifdef _WIN32
     QueryPerformanceCounter(&start);
 #else
     clock_gettime(CLOCK_MONOTONIC, &start);
 #endif
+
     // --- Run pipeline ---
     if ((rc = pm_encode(pm, kp)) != 0) goto cleanup;
     if ((rc = onnx_run(om, kp)) != 0) goto cleanup;
+
 #ifdef _WIN32
     QueryPerformanceCounter(&end);
     double elapsed_seconds = (double)(end.QuadPart - start.QuadPart) / (double)freq.QuadPart;
@@ -53,8 +54,9 @@ int main(int argc, char* argv[])
     clock_gettime(CLOCK_MONOTONIC, &end);
     double elapsed_seconds = (end.tv_sec - start.tv_sec)
       + (end.tv_nsec - start.tv_nsec) / 1e9;
-#endif    
-    printf("Pipeline time: %.6f seconds\n", elapsed_seconds);
+#endif
+    if(i)
+      printf("[%04d] Pipeline time: %.6f seconds\n", i,elapsed_seconds);
     os_write_wav_float32_mono(kp->run.output_file, (void*)kp->run.output, kp->run.output_len, 24000);
     free(kp->run.output);
     kp->run.output = 0;

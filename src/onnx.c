@@ -126,7 +126,7 @@ int onnx_run(onnx_manager* om, kt_params* kp)
     input_ids_len = input_ids_len +2;
     int64_t input_ids_shape[] = {1, (int64_t)input_ids_len };
 
-    int64_t* input_ids_data = calloc(sizeof(int64_t), input_ids_len);
+    int64_t* input_ids_data = calloc(sizeof(int64_t), input_ids_len+2);
     if (!input_ids_data)
         return -1;
     for (size_t i = 1; i < input_ids_len-1; i++) {
@@ -139,7 +139,7 @@ int onnx_run(onnx_manager* om, kt_params* kp)
         input_ids_shape, 2, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64,
         &input_tensors[0]);
 
-    int64_t* style_data = calloc(om->voice_size ,sizeof(int64_t));
+    int64_t* style_data = malloc(om->voice_size *sizeof(int64_t));
     if (!style_data)
         return -1;
     for (size_t i = 0; i < om->voice_size; i++) {
