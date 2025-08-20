@@ -71,8 +71,8 @@ int onnx_init(onnx_manager* om, kt_params* kp)
     om->api->SetSessionGraphOptimizationLevel(om->session_options, 1); // 0=DISABLE, 1=BASIC, 2=EXT, 99=ALL 1GOOD
 
     // Threading (tune these two; start here)
-    //om->api->SetIntraOpNumThreads(om->session_options, /*cores*/ 4); // heavy ops (GEMM/conv) parallelism
-    //om->api->SetInterOpNumThreads(om->session_options, 1);           // parallel nodes/branches
+    om->api->SetIntraOpNumThreads(om->session_options, /*cores*/ 4); // heavy ops (GEMM/conv) parallelism
+    om->api->SetInterOpNumThreads(om->session_options, 1);           // parallel nodes/branches
 
     //om->api->EnableCpuMemArena(om->session_options);
     //om->api->EnableMemPattern(om->session_options);	
