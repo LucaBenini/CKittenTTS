@@ -5,7 +5,7 @@
 It runs on **Windows** and **Linux**, supporting both **x64** and **ARM64** architectures (e.g., Raspberry Pi 64-bit OS) it is written with a style embedded-friendly.
 
 Unlike the official Python inference implementation, this port avoids several pitfalls—most notably in the **tokenizer**.  
-By removing the inefficiencies of the Python tokenizer wrapper, we achieve significant performance improvements:
+By removing the inefficiencies of the Python tokenizer wrapper, we achieve significant performance improvements Raspberry Pi 5:
 
 | Model | CKitten | Python |
 |-------|---------|--------|
