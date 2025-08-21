@@ -52,7 +52,7 @@ sf.write("output.wav", audio, 24000)
 The Python implementation relies on a phonemizer wrapper that accesses the disk on every call and a loading for the voices.
 This introduces additional variability in benchmarking results.
 
-```
+
 
 ## 📦 Requirements
 
