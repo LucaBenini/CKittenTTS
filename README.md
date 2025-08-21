@@ -1,4 +1,3 @@
-````markdown
 # CKitten
 
 **CKitten** is a lightweight **C port** of the inference engine from [KittenTTS](https://github.com/KittenML/KittenTTS/), a text-to-speech system.
