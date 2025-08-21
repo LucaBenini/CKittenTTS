@@ -68,7 +68,7 @@ int onnx_init(onnx_manager* om, kt_params* kp)
     }
     // Fast defaults (CPU)
     om->api->SetSessionExecutionMode(om->session_options, 0);        // 0=SEQUENTIAL, 1=PARALLEL 0GOOD
-    om->api->SetSessionGraphOptimizationLevel(om->session_options, 1); // 0=DISABLE, 1=BASIC, 2=EXT, 99=ALL 1GOOD
+    om->api->SetSessionGraphOptimizationLevel(om->session_options, 0); // 0=DISABLE, 1=BASIC, 2=EXT, 99=ALL 1GOOD
 
     // Threading (tune these two; start here)
     om->api->SetIntraOpNumThreads(om->session_options, /*cores*/ 4); // heavy ops (GEMM/conv) parallelism

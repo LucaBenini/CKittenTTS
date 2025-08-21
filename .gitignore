@@ -1,4 +1,5 @@
-
+models/
+bin/*.json
 bin/kittentts
 *.wav
 bin/*wav

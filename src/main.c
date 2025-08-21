@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     if ((rc = pm_init(pm)) != 0) goto cleanup;
     if ((rc = onnx_init(om, kp)) != 0) goto cleanup;
 
-    for(int i =0; i < 101; i++)
+    for(int i =0; i < 3; i++)
       {
 #ifdef _WIN32
     QueryPerformanceCounter(&start);
