@@ -1,14 +1,59 @@
-Here’s the updated README with your changes applied.
-
----
-
+````markdown
 # CKitten
 
-**CKitten** is a minimal **C port** of [KittenTTS](https://github.com/KittenML/KittenTTS/), a text-to-speech system.
+**CKitten** is a lightweight **C port** of the inference engine from [KittenTTS](https://github.com/KittenML/KittenTTS/), a text-to-speech system.
 
-It now runs on **Windows** and **Linux** (both **x64** and **ARM64**, e.g., Raspberry Pi 64-bit OS).
+It runs on **Windows** and **Linux**, supporting both **x64** and **ARM64** architectures (e.g., Raspberry Pi 64-bit OS).
+
+Unlike the official Python inference implementation, this port avoids several pitfalls—most notably in the **tokenizer**.  
+By removing the inefficiencies of the Python tokenizer wrapper, we achieve significant performance improvements:
+
+| Model | CKitten | Python |
+|-------|---------|--------|
+| 0.1   | 3.28 s  | 6.31 s |
+| 0.2   | 3.55 s  | 7.08 s |
 
 ---
+
+### Benchmark (Raspberry Pi)
+
+**Test phrase:**
+
+> "The quick brown fox jumps over the lazy dog. Dr. Smith asked whether it's 3:30 PM today."
+
+#### Python benchmark code
+```python
+from kittentts import KittenTTS
+import time
+import soundfile as sf
+
+m = KittenTTS("KittenML/kitten-tts-nano-0.2")
+
+for x in range(0, 11):
+    s = time.time()
+    audio = m.generate(
+        "The quick brown fox jumps over the lazy dog. Dr. Smith asked whether it's 3:30 PM today.",
+        voice="expr-voice-2-f"
+    )
+    e = time.time()
+    if x != 0:  # skip first run (warm-up)
+        print(f"[{x}] Elapsed time: {e - s:.2f} s")
+
+# Available voices:
+# ['expr-voice-2-m', 'expr-voice-2-f', 'expr-voice-3-m', 'expr-voice-3-f',
+#  'expr-voice-4-m', 'expr-voice-4-f', 'expr-voice-5-m', 'expr-voice-5-f']
+
+# Save the audio
+sf.write("output.wav", audio, 24000)
+````
+
+---
+
+⚠️ **Note:**
+The Python implementation relies on a phonemizer wrapper that accesses the disk on every call and a loading for the voices.
+This introduces additional variability in benchmarking results.
+
+```
 
 ## 📦 Requirements
 
